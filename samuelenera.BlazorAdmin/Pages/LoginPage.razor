@@ -1,0 +1,137 @@
+﻿@page "/login"
+
+@using Models
+@using Services
+@inject Microsoft.Extensions.Configuration.IConfiguration config
+@inject HttpClient Http
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+
+<div class="middle-box">
+    <Card Class="border-0">
+        @*<CardHeader>
+                <CardTitle><h3>Login</h3></CardTitle>
+            </CardHeader>*@
+        <CardBody>
+
+            <EditForm Model="@wpUserLogin" OnValidSubmit="@ValidateUser">
+                <Validations @ref="validationGroup" Mode="ValidationMode.Auto" Model="@wpUserLogin">
+                    <Validation>
+                        <Field>
+                            <FieldLabel>Username or E-mail:</FieldLabel>
+                            <TextEdit Placeholder="Username or E-mail" @bind-Text="wpUserLogin.username">
+                                <Feedback>
+                                    <ValidationError />
+                                </Feedback>
+                            </TextEdit>
+                        </Field>
+                    </Validation>
+                    <Validation>
+                        <Field>
+                            <FieldLabel>Password:</FieldLabel>
+                            <TextEdit Role="TextRole.Password" @bind-Text="wpUserLogin.password" Placeholder="Password">
+                                <Feedback>
+                                    <ValidationError />
+                                </Feedback>
+                            </TextEdit>
+                        </Field>
+                    </Validation>
+                    <Button Block="true" Color="Color.Primary" Loading="IsLoading" Clicked="ValidateUser">Login</Button>
+
+                </Validations>
+                <div class="row" style="padding-top: 10px;">
+                    <div class="col-md-6 text-left">
+                        <a href="@(config["WPDomain"].ToString() + "login/?action=forgot_password")">Forgot Password?</a>
+                    </div>
+                    <div class="col-md-6 text-right">
+                        <a href="@(config["WPDomain"].ToString() + "register/basic-plan/")">Sign Up</a>
+                    </div>
+                </div>
+                <div class="row" style="padding-top: 10px">
+                    <div class="col col-12">
+
+                        <Alert Color="Color.Danger" Visible="@loginFailed" >
+                            <strong>Login Error: </strong> @LoginMesssage
+                        </Alert>
+
+                    </div>
+                </div>
+            </EditForm>
+
+
+        </CardBody>
+    </Card>
+</div>
+<style>
+    .middle-box {
+        margin: auto;
+        margin-top: 150px;
+        width: 450px;
+        padding: 30px;
+        box-shadow: 5px 10px 18px #888888;
+        border-radius: 20px;
+    }
+</style>
+
+@code{
+
+    private WPUserLoginModel wpUserLogin = new WPUserLoginModel();
+    private bool IsLoading = false;
+    Validations validationGroup;
+
+    public string LoginMesssage { get; set; }
+    private bool loginFailed { get; set; }
+    private async Task ValidateUser()
+    {
+        if (validationGroup.ValidateAll())
+        {
+
+            IsLoading = true;
+            loginFailed = false;
+            LoginMesssage = "";
+
+            try
+            {
+                
+                using (HttpResponseMessage response = await Http.PostAsJsonAsync("wp-json/jwt-auth/v1/token", wpUserLogin))
+                {
+                    if (response.IsSuccessStatusCode)
+                    {
+                        AuthenticatedUserModel authenticatedUserModel = new AuthenticatedUserModel();
+
+                        authenticatedUserModel = await response.Content.ReadFromJsonAsync<AuthenticatedUserModel>();
+
+                        if (authenticatedUserModel.token != null)
+                        {
+
+                            await ((CustomAuthenticationStateProvider)AuthenticationStateProvider).MarkUserAsAuthenticated(authenticatedUserModel);
+
+                        }
+                    }
+                    if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                    {
+                        loginFailed = true;
+                        LoginMesssage = "Invalid username or password";
+                    }
+
+                }
+            }
+            catch (Exception ex)
+            {
+                loginFailed = true;
+                LoginMesssage =  ex.Message;
+            }
+
+        }
+        else
+        {
+
+        }
+
+
+
+        IsLoading = false;
+
+    }
+
+}

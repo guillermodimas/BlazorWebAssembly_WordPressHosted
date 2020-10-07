@@ -1,0 +1,208 @@
+﻿@using samuelenera.BlazorAdmin.Services
+
+@using samuelenera.BlazorAdmin.Models
+@using System.Globalization;
+@inject Microsoft.Extensions.Configuration.IConfiguration config
+@inject HttpClient client
+@inject ILocalStorageService _local
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IFirebaseAPIClient _firebaseClient
+@inject IMemberpressAPIClient _memberPressAPIClient
+@attribute [Authorize]
+
+@using FireSharp.Config;
+@using FireSharp.Interfaces;
+@using FireSharp.Response;
+
+
+
+
+@page "/Devices"
+@page "/ezer_se/blazor/Devices"
+@if (isLoading == true)
+{
+    <div class="sk-cube-grid">
+        <div class="sk-cube sk-cube1"></div>
+        <div class="sk-cube sk-cube2"></div>
+        <div class="sk-cube sk-cube3"></div>
+        <div class="sk-cube sk-cube4"></div>
+        <div class="sk-cube sk-cube5"></div>
+        <div class="sk-cube sk-cube6"></div>
+        <div class="sk-cube sk-cube7"></div>
+        <div class="sk-cube sk-cube8"></div>
+        <div class="sk-cube sk-cube9"></div>
+    </div>
+}
+else
+{
+    <div class="pricing-header px-3 py-3 pt-md-5 pb-md-4 mx-auto text-center">
+        <h1 class="display-4">My Devices</h1>
+
+    </div>
+
+    @if (subscriberDevices != null)
+    {
+        <h3>Model</h3>
+        @if (device != null)
+        {
+            <Validations Mode="ValidationMode.Auto" Model="@device">
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <Validation>
+                            <Select id="childGrade" Margin="Margin.Is2.FromBottom" TValue="string" @bind-SelectedValue="@device.Model">
+                                <ChildContent>
+                                    <SelectItem Value="@(string.Empty)"></SelectItem>
+                                    <SelectItem Value="@("iPhone")">iPhone</SelectItem>
+                                    <SelectItem Value="@("Android")">Android</SelectItem>
+                                </ChildContent>
+                                <Feedback>
+                                    <ValidationError />
+                                </Feedback>
+                            </Select>
+                        </Validation>
+                    </div>
+                    <div class="col-md-4">
+                        <Validation>
+                            <Field>
+
+                                <TextEdit Placeholder="IMEI" @bind-Text="device.IMEI">
+                                    <Feedback>
+                                        <ValidationError />
+                                    </Feedback>
+                                </TextEdit>
+                            </Field>
+                        </Validation>
+                    </div>
+                    <div class="col-md-4">
+                        <Button Color="Color.Primary" Clicked="@AddSubscriberDevice">Add</Button>
+                    </div>
+
+                </div>
+            </Validations>
+        }
+
+
+
+        if (subscriberDevices.Devices.Count == 0)
+        {
+            <div class="alert alert-info col-md-12 px-3" align="center">
+                No Devices Added
+            </div>
+        }
+        else
+        {
+            <h3>Devices</h3>
+            <table class="table table th-f">
+                <thead>
+                    <tr>
+                        <th>Model</th>
+                        <th>IMEI</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var returnedDevice in subscriberDevices.Devices)
+                    {
+                        <tr>
+                            <th>@returnedDevice.Model</th>
+
+                            <th>@returnedDevice.IMEI</th>
+                            <th>
+                                <Button Color="Color.Danger" @onclick="@(e => RemoveFromList(returnedDevice))">Remove</Button>
+                            </th>
+
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+        }
+    }
+
+
+
+
+
+
+
+}
+
+
+@code
+{
+    private FirebaseSubscriberDevicesModel.Device device { get; set; } = new FirebaseSubscriberDevicesModel.Device();
+    private FirebaseSubscriberDevicesModel subscriberDevices { get; set; }
+
+    private bool isLoading { get; set; }
+    private string UserID { get; set; }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+
+
+        isLoading = true;
+        try
+        {
+            subscriberDevices = new FirebaseSubscriberDevicesModel();
+
+            string email = await _local.GetItemAsync<string>("user_email");
+            var results = await _memberPressAPIClient.GetMemberPressBasicUserInfoModelByEmail();
+            if (results != null)
+            {
+                UserID = results[0].id.ToString();
+
+
+                FirebaseSubscriberDevicesModel returnedRecord = new FirebaseSubscriberDevicesModel();
+                returnedRecord = await _firebaseClient.GetSubscriberDevices(UserID);
+
+                //NO SUBSCRIBER RECORD CREATED YET, INITIALIZE ONE
+                if (returnedRecord == null)
+                {
+                    FirebaseSubscriberDevicesModel newRecord = new FirebaseSubscriberDevicesModel
+                    {
+                        EmailAddress = email,
+                        FirstName = results[0].first_name,
+                        LastName = results[0].last_name
+
+                    };
+
+
+
+                    await _firebaseClient.UpdateInsertRecord(UserID, newRecord);
+
+                    subscriberDevices = await _firebaseClient.GetSubscriberDevices(UserID);
+
+                }
+                else
+                {
+                    subscriberDevices = await _firebaseClient.GetSubscriberDevices(UserID);
+                }
+
+
+
+            }
+        }
+        catch (Exception ex)
+        {
+
+        }
+        isLoading = false;
+    }
+
+    private async Task AddSubscriberDevice()
+    {
+        subscriberDevices.Devices.Add(device);
+        var response = await _firebaseClient.InserSubscribertDevice(UserID, subscriberDevices.Devices);
+
+        device = new FirebaseSubscriberDevicesModel.Device();
+
+    }
+    private async Task RemoveFromList(FirebaseSubscriberDevicesModel.Device deviceToRemove)
+    {
+        subscriberDevices.Devices.Remove(deviceToRemove);
+        var response = await _firebaseClient.InserSubscribertDevice(UserID, subscriberDevices.Devices);
+
+    }
+}

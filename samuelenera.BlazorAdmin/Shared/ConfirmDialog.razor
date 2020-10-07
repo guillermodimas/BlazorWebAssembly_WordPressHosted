@@ -1,0 +1,57 @@
+﻿@page "/confirm"
+@using Blazorise
+
+<Modal @ref="modalConfirm">
+    <ModalBackdrop />
+    <ModalContent Centered="true">
+        <ModalHeader>
+            <ModalTitle>@Title</ModalTitle>
+            <CloseButton Clicked="@HideModal" />
+        </ModalHeader>
+        <ModalBody>
+            <Field>
+                <FieldLabel>@Body</FieldLabel>
+            </Field>
+        </ModalBody>
+        <ModalFooter>
+            <Button Color="Color.Secondary" Clicked="@OnCancelClicked">Cancel</Button>
+            <Button Color="Color.Primary" Clicked="@OnConfirmClicked">Confirm</Button>
+        </ModalFooter>
+    </ModalContent>
+</Modal>
+
+@code{
+    [Parameter]
+    public string Title { get; set; }
+
+    [Parameter]
+    public string Body { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> OnConfirmationSelected { get; set; }
+
+    // reference to the modal component
+    private Modal modalConfirm;
+
+    public void ShowModal()
+    {
+        modalConfirm.Show();
+    }
+
+    private void HideModal()
+    {
+
+        modalConfirm.Hide();
+    }
+
+    private void OnConfirmClicked()
+    {
+        OnConfirmationSelected.InvokeAsync(true);
+        modalConfirm.Hide();
+    }
+    private void OnCancelClicked()
+    {
+        OnConfirmationSelected.InvokeAsync(false);
+        modalConfirm.Hide();
+    }
+}

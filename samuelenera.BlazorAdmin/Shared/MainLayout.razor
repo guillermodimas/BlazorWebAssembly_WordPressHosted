@@ -1,0 +1,189 @@
+﻿@inherits LayoutComponentBase
+
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+@using Services
+<Layout Sider="true">
+    <LayoutSider>
+        <AuthorizeView>
+            <Authorized>
+                <LayoutSiderContent>
+                    <Bar Breakpoint="Breakpoint.Desktop" NavigationBreakpoint="Breakpoint.Tablet" ThemeContrast="ThemeContrast.Light" Mode="BarMode.VerticalInline" CollapseMode="BarCollapseMode.Small" @bind-Visible="siderVisible">
+                        <BarBrand>
+                            <BarItem>
+                                <BarLink To="">
+                                    <BarIcon IconName="IconName.ExclamationTriangle" />
+                                    RapidAlert
+                                </BarLink>
+                            </BarItem>
+                        </BarBrand>
+                        <BarMenu>
+                            <BarStart>
+                                <BarItem>
+                                    <BarLink To="/ezer_se/blazor/">
+                                        <BarIcon IconName="IconName.User" />
+                                        Account
+                                    </BarLink>
+                                </BarItem>
+                                <BarItem>
+                                    <BarLink To="/ezer_se/blazor/Devices">
+                                        <BarIcon IconName="IconName.Smartphone" />
+                                        Devices
+                                    </BarLink>
+                                </BarItem>
+
+                            </BarStart>
+                            <BarEnd>
+                                <BarItem>
+                                    <BarLink Clicked="@Logout">
+                                        <Icon Name="@("fa-sign-out-alt")" />
+                                        Sign Out
+                                    </BarLink>
+                                </BarItem>
+
+                            </BarEnd>
+                        </BarMenu>
+                    </Bar>
+                </LayoutSiderContent>
+            </Authorized>
+        </AuthorizeView>
+
+    </LayoutSider>
+    <Layout>
+        <LayoutHeader Fixed="true">
+            <Bar Style="height: 64px;" Breakpoint="Breakpoint.Desktop" Background="Background.White" ThemeContrast="ThemeContrast.Light">
+                <BarBrand>
+                    <BarItem>
+                        <AuthorizeView>
+                            <Authorized>
+                            </Authorized>
+                            <NotAuthorized>
+                                <BarLink To="">
+                                    <BarIcon IconName="IconName.ExclamationTriangle" />
+                                    RapidAlert
+                                </BarLink>
+                            </NotAuthorized>
+                        </AuthorizeView>
+                               
+                    </BarItem>
+                </BarBrand>
+                <BarToggler Clicked="@ToggleSidebar" />
+                <BarMenu>
+                    <BarStart>
+
+                    </BarStart>
+                    <BarEnd>
+                        <AuthorizeView>
+                            <Authorized>
+
+                                       <BarLabel>Welcome, @context.User.Identity.Name </BarLabel>
+                          
+                            </Authorized>
+                        </AuthorizeView>
+                    </BarEnd>
+                </BarMenu>
+            </Bar>
+        </LayoutHeader>
+        <LayoutContent Padding="Padding.Is4.OnX">
+
+            @*<div class="row" style="padding-top:1%">
+
+
+                <div class="col-md-2">
+                </div>
+                <div class="col-md-8">
+                    @Body
+                </div>
+                <div class="col-md-2">
+
+                </div>
+     </div>*@
+
+        @Body
+        </LayoutContent>
+</Layout>
+</Layout>
+
+@code{
+    void OnThemeEnabledChanged(bool value)
+    {
+        if (Theme == null)
+            return;
+
+        Theme.Enabled = value;
+
+        Theme.ThemeHasChanged();
+    }
+
+    void OnGradientChanged(bool value)
+    {
+        if (Theme == null)
+            return;
+
+        Theme.IsGradient = value;
+
+        //if ( Theme.GradientOptions == null )
+        //    Theme.GradientOptions = new GradientOptions();
+
+        //Theme.GradientOptions.BlendPercentage = 80;
+
+        Theme.ThemeHasChanged();
+    }
+
+    void OnRoundedChanged(bool value)
+    {
+        if (Theme == null)
+            return;
+
+        Theme.IsRounded = value;
+
+        Theme.ThemeHasChanged();
+    }
+
+    void OnThemeColorChanged(string value)
+    {
+        if (Theme == null)
+            return;
+
+        if (Theme.ColorOptions == null)
+            Theme.ColorOptions = new ThemeColorOptions();
+
+        if (Theme.BackgroundOptions == null)
+            Theme.BackgroundOptions = new ThemeBackgroundOptions();
+
+        if (Theme.TextColorOptions == null)
+            Theme.TextColorOptions = new ThemeTextColorOptions();
+
+        Theme.ColorOptions.Primary = value;
+        Theme.BackgroundOptions.Primary = value;
+        Theme.TextColorOptions.Primary = value;
+
+        if (Theme.InputOptions == null)
+            Theme.InputOptions = new ThemeInputOptions();
+
+        //Theme.InputOptions.Color = value;
+        Theme.InputOptions.CheckColor = value;
+        Theme.InputOptions.SliderColor = value;
+
+        Theme.ThemeHasChanged();
+    }
+
+
+    private bool siderVisible = true;
+    private bool uiElementsVisible = true;
+
+    RenderFragment customIcon =@<img src="/brand-logo.png" style="width:32px; height: 32px" />;
+
+    void ToggleSidebar()
+    {
+        siderVisible = !siderVisible;
+        StateHasChanged();
+    }
+
+    [CascadingParameter] protected Theme Theme { get; set; }
+
+    public async Task Logout()
+    {
+        await ((CustomAuthenticationStateProvider)AuthenticationStateProvider).MarkUserAsLoggedOut();
+    }
+                                     }
